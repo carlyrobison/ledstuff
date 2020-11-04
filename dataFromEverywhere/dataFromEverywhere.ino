@@ -1,5 +1,5 @@
 #include <ssl_client.h>
-
+#include <WiFi.h>
 #include <FastLED.h>
 //#include <Arduino.h>
 //
@@ -7,7 +7,6 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include "secrets.h"
-//#include <WiFi.h>
 
 FASTLED_USING_NAMESPACE
 
@@ -19,6 +18,20 @@ FASTLED_USING_NAMESPACE
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 #define NUM_LEDS    64
+
+// Set web server port number to 80
+WiFiServer server(80);
+
+// Current time
+unsigned long currentTime = millis();
+// Previous time
+unsigned long previousTime = 0; 
+// Define timeout time in milliseconds (example: 2000ms = 2s)
+const long timeoutTime = 2000;
+
+// Variable to store the HTTP request
+String header;
+
 CRGB leds[NUM_LEDS];
 CRGB rainbow[6] = {CRGB::Purple, CRGB::Blue, CRGB::Green, CRGB::Yellow, CRGB::Orange, CRGB::Red};
 int i = 0;
@@ -60,9 +73,13 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(SECRET_SSID, SECRET_PASS);
 
-  // tell FastLED about the LED strip configuration
-  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(BRIGHTNESS);
+  delay(3000); // 3 second delay for recovery
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  
   leds[0] = CRGB::Red;
   FastLED.show();
 
@@ -85,6 +102,7 @@ void loop() {
   cycleRainbow(i);
   i++;
 
+//  webServerLoop()
 //  webLoop();
   
   FastLED.show();
@@ -140,4 +158,47 @@ void webLoop(){
 
 void cycleRainbow(int i) {
   leds[0] = rainbow[i%6];
+}
+
+
+void webServerLoop() {
+  WiFiClient client = server.available();   // Listen for incoming clients
+
+  if (client) { // If a new client connects,
+    currentTime = millis();
+    previousTime = currentTime;
+
+    bool previousNewline = false;
+    while (client.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
+      currentTime = millis();
+      if (client.available()) { // if there's bytes to read from the client,
+        char c = client.read();
+        header += c;
+        if (c == '\n' && previousNewline == true) {
+          // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+          // and a content-type so the client knows what's coming, then a blank line:
+          client.println("HTTP/1.1 200 OK");
+          client.println("Connection: close");
+          client.println();
+          client.println();
+
+          if (header.indexOf("GET /on") >= 0) {
+            leds[0] = CRGB::Purple;
+            FastLED.show();
+          } else if (header.indexOf("GET /off") >= 0) {
+            leds[0] = CRGB::Black;
+            FastLED.show();          
+          }
+
+          break;
+        } else if (c == '\n') {
+          previousNewline = true;
+        }
+      }
+    }
+    // Clear the header variable
+    header = "";
+    // Close the connection
+    client.stop();
+  }
 }
