@@ -1,11 +1,11 @@
 #include <ssl_client.h>
-#include <WiFi.h>
 #include <FastLED.h>
 //#include <Arduino.h>
 //
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <WiFi.h>
 #include "secrets.h"
 
 FASTLED_USING_NAMESPACE
@@ -73,12 +73,10 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFiMulti.addAP(SECRET_SSID, SECRET_PASS);
 
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(BRIGHTNESS);
   delay(3000); // 3 second delay for recovery
-
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-  }
   
   leds[0] = CRGB::Red;
   FastLED.show();
@@ -92,21 +90,21 @@ void setup() {
   leds[0] = CRGB::Orange;
   FastLED.show();
 
-//  setClock();
+  setClock();
   leds[0] = CRGB::Green;
   FastLED.show();
 }
 
 void loop() {
   // Cycle through rainbow
-  cycleRainbow(i);
-  i++;
+  //cycleRainbow(i);
+  //i++;
 
-//  webServerLoop()
+  webServerLoop();
 //  webLoop();
   
-  FastLED.show();
-  delay(1000/FRAMES_PER_SECOND);
+  //FastLED.show();
+  //delay(1000/FRAMES_PER_SECOND);
 }
 
 void webLoop(){
