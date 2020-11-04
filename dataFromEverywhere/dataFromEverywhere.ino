@@ -6,11 +6,10 @@ FASTLED_USING_NAMESPACE
 #warning "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
-#define DATA_PIN    0 // TODO ACTUALLY A0
-//#define CLK_PIN   4
+#define DATA_PIN    26 // PIN A0 is GPIO 26
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
-#define NUM_LEDS    300
+#define NUM_LEDS    64
 CRGB leds[NUM_LEDS];
 
 #define BRIGHTNESS          96
@@ -28,9 +27,25 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
-
+  // Turn the LED on, then pause
+  
+  leds[0] = CRGB::Purple;
   FastLED.show();
-  FastLED.delay(1000/FRAMES_PER_SECOND);
+  delay(500);
+
+  leds[0] = CRGB::Blue;
+  FastLED.show();
+  delay(500);
+
+  leds[0] = CRGB::Green;
+  FastLED.show();
+  delay(500);
+
+  leds[0] = CRGB::Yellow;
+  FastLED.show();
+  delay(500);
+
+  leds[0] = CRGB::Red;
+  FastLED.show();
+  delay(500);
 }
