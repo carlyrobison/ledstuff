@@ -93,14 +93,16 @@ void setup() {
   setClock();
   leds[0] = CRGB::Green;
   FastLED.show();
+  // start the web server  
+  server.begin();
 }
 
 void loop() {
   // Cycle through rainbow
-  //cycleRainbow(i);
-  //i++;
+//  cycleRainbow(i);
+//  i++;
 
-  webServerLoop();
+    webServerLoop();
 //  webLoop();
   
   //FastLED.show();
