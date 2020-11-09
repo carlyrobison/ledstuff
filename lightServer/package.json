@@ -5,7 +5,9 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "colors.js": "^1.2.4",
     "express": "^4.17.1",
+    "jsdom": "^16.4.0",
     "node-fetch": "^2.6.1"
   },
   "type": "module"
