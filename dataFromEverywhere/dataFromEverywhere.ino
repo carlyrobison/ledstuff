@@ -15,12 +15,13 @@ FASTLED_USING_NAMESPACE
 #endif
 
 #define DATA_PIN    26 // PIN A0 is GPIO 26
-#define LED_TYPE    WS2812
+#define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
-#define NUM_LEDS    64
+#define NUM_LEDS    10
 
 // Set web server port number to 80
 WiFiServer server(80);
+WiFiClient client;
 
 // Current time
 unsigned long currentTime = millis();
@@ -65,9 +66,15 @@ void setClock() {
   Serial.print(asctime(&timeinfo));
 }
 
+void fillLEDs(CRGB color) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = color;
+  }
+}
+
 // put your setup code here, to run once:
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println();
 
   WiFi.mode(WIFI_STA);
@@ -78,7 +85,7 @@ void setup() {
   FastLED.setBrightness(BRIGHTNESS);
   delay(3000); // 3 second delay for recovery
   
-  leds[0] = CRGB::Red;
+  fillLEDs(CRGB::Red);
   FastLED.show();
 
 //   wait for WiFi connection
@@ -99,14 +106,14 @@ void setup() {
 
 void loop() {
   // Cycle through rainbow
-//  cycleRainbow(i);
-//  i++;
+  cycleRainbow(i);
+  i++;
 
-    webServerLoop();
-//  webLoop();
+  webServerLoop();
+  webLoop();
   
-  //FastLED.show();
-  //delay(1000/FRAMES_PER_SECOND);
+  FastLED.show();
+  delay(1000/FRAMES_PER_SECOND);
 }
 
 void webLoop(){
@@ -157,7 +164,7 @@ void webLoop(){
 }
 
 void cycleRainbow(int i) {
-  leds[0] = rainbow[i%6];
+  fillLEDs(rainbow[i%6]);
 }
 
 
