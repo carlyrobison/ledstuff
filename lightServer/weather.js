@@ -16,7 +16,7 @@ let options = {
   headers: { 'Content-Type': 'application/json', 'apikey': CLIMACELL_API_KEY },
 };
 
-function getWeatherData() {
+export function getWeatherData() {
   return fetch(url + '?' + querystring.encode(query_string), options)
     .then(res => res.json())
     .then(json => formatWeatherdata(json))
@@ -29,5 +29,3 @@ function formatWeatherData(json) {
 function tempToHSV(temp) {
 
 }
-
-function 
