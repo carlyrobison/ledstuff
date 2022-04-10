@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 
 const express = require('express')
 const app = express()
-const port = 3000
+const port = 3145
 
 app.get('/', async (req, res) => {
   const lightVals = await calculateLightValues()

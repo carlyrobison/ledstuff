@@ -1,10 +1,10 @@
 #include <ssl_client.h>
 #include <FastLED.h>
+#include "ArduinoJson.h"
 //#include <Arduino.h>
 //
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
-#include <WiFiClientSecure.h>
 #include <WiFi.h>
 #include "secrets.h"
 
@@ -17,11 +17,7 @@ FASTLED_USING_NAMESPACE
 #define DATA_PIN    26 // PIN A0 is GPIO 26
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
-#define NUM_LEDS    10
-
-// Set web server port number to 80
-WiFiServer server(80);
-WiFiClient client;
+#define NUM_LEDS    3
 
 // Current time
 unsigned long currentTime = millis();
@@ -45,30 +41,17 @@ WiFiMulti WiFiMulti;
 char ssid[] = SECRET_SSID;   // your network SSID (name) 
 char pass[] = SECRET_PASS;   // your network password
 
-// Not sure if WiFiClientSecure checks the validity date of the certificate. 
-// Setting clock just to be sure...
-void setClock() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+void fillLED(int n, CRGB color) {
+  leds[n] = color;
+}
 
-  Serial.print(F("Waiting for NTP time sync: "));
-  time_t nowSecs = time(nullptr);
-  while (nowSecs < 8 * 3600 * 2) {
-    delay(500);
-    Serial.print(F("."));
-    yield();
-    nowSecs = time(nullptr);
-  }
-
-  Serial.println();
-  struct tm timeinfo;
-  gmtime_r(&nowSecs, &timeinfo);
-  Serial.print(F("Current time: "));
-  Serial.print(asctime(&timeinfo));
+void fillLED(int n, CHSV color) {
+  leds[n] = color;
 }
 
 void fillLEDs(CRGB color) {
   for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = color;
+    fillLED(i, color);
   }
 }
 
@@ -94,118 +77,72 @@ void setup() {
     Serial.println(".");
   }
   Serial.println(" connected");
-  leds[0] = CRGB::Orange;
-  FastLED.show();
 
-  setClock();
-  leds[0] = CRGB::Green;
+  fillLED(0, CRGB::Green);
   FastLED.show();
-  // start the web server  
-  server.begin();
 }
 
 void loop() {
-  // Cycle through rainbow
-  cycleRainbow(i);
-  i++;
-
-  webServerLoop();
   webLoop();
   
   FastLED.show();
   delay(1000/FRAMES_PER_SECOND);
 }
 
-void webLoop(){
-  WiFiClientSecure *client = new WiFiClientSecure;
-  if(client) {
-    client -> setCACert(rootCACertificate);
+void parseJson(String msg){
+  String msg2 = "{'lights':[[241,100,100]]}";
+  StaticJsonDocument<300> doc;  // consider more buffer
+  auto error = deserializeJson(doc, msg2);
 
-    {
-      // Add a scoping block for HTTPClient https to make sure it is destroyed before WiFiClientSecure *client is 
-      HTTPClient https;
-  
-      Serial.print("[HTTPS] begin...\n");
-      if (https.begin(*client, "https://jigsaw.w3.org/HTTP/connection.html")) {  // HTTPS
-        Serial.print("[HTTPS] GET...\n");
-        // start connection and send HTTP header
-        int httpCode = https.GET();
-  
-        // httpCode will be negative on error
-        if (httpCode > 0) {
-          // HTTP header has been send and Server response header has been handled
-          Serial.printf("[HTTPS] GET... code: %d\n", httpCode);
-  
-          // file found at server
-          if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-            String payload = https.getString();
-            Serial.println(payload);
-          }
-        } else {
-          Serial.printf("[HTTPS] GET... failed, error: %s\n", https.errorToString(httpCode).c_str());
-        }
-  
-        https.end();
-      } else {
-        Serial.printf("[HTTPS] Unable to connect\n");
-      }
-
-      // End extra scoping block
-    }
-  
-    delete client;
-  } else {
-    Serial.println("Unable to create client");
+  if (error) { //Check for errors in parsing
+    Serial.print(F("deserializeJson() failed with code "));
+    Serial.println(error.c_str());
+    delay(1000);
+    return;
   }
 
+  serializeJson(doc, Serial);
+
+  JsonArray a = doc["lights"].as<JsonArray>();
+  for (JsonVariant v : a) {
+    JsonArray light = v.as<JsonArray>();
+    Serial.println(light[0].as<int>());
+//    Serial.println(lightVals[i][0], lightVals[i][1], lightVals[i][2]);
+//    Serial.println(lightVals[i][0]);
+    fillLED(i, CRGB(light[0].as<int>(), light[1].as<int>(), light[2].as<int>()));
+  }
+}
+
+void webLoop(){
   Serial.println();
   Serial.println("Waiting 1s before the next round...");
-  delay(1000);
-}
+  delay(5000);
+  HTTPClient http;
 
-void cycleRainbow(int i) {
-  fillLEDs(rainbow[i%6]);
-}
+  Serial.print("[HTTP] begin...\n");
+  if (http.begin(IP_ADDRESS, PORT)) {
+    Serial.print("[HTTP] GET...\n");
+    // start connection and send HTTP header
+    int httpCode = http.GET();
 
+    // httpCode will be negative on error
+    if (httpCode > 0) {
+      // HTTP header has been send and Server response header has been handled
+      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
 
-void webServerLoop() {
-  WiFiClient client = server.available();   // Listen for incoming clients
-
-  if (client) { // If a new client connects,
-    currentTime = millis();
-    previousTime = currentTime;
-
-    bool previousNewline = false;
-    while (client.connected() && currentTime - previousTime <= timeoutTime) {  // loop while the client's connected
-      currentTime = millis();
-      if (client.available()) { // if there's bytes to read from the client,
-        char c = client.read();
-        header += c;
-        if (c == '\n' && previousNewline == true) {
-          // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-          // and a content-type so the client knows what's coming, then a blank line:
-          client.println("HTTP/1.1 200 OK");
-          client.println("Connection: close");
-          client.println();
-          client.println();
-
-          if (header.indexOf("GET /on") >= 0) {
-            leds[0] = CRGB::Purple;
-            FastLED.show();
-          } else if (header.indexOf("GET /off") >= 0) {
-            leds[0] = CRGB::Black;
-            FastLED.show();          
-          }
-
-          break;
-        } else if (c == '\n') {
-          previousNewline = true;
-        }
+      // file found at server
+      if (httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        Serial.println(payload);
+        parseJson(payload);
+        
       }
+    } else {
+      Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
-    // Clear the header variable
-    header = "";
-    // Close the connection
-    client.stop();
+
+    http.end();
+  } else {
+    Serial.printf("[HTTP] Unable to connect\n");
   }
 }
