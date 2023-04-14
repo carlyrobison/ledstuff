@@ -4,15 +4,9 @@ const HUE_MAX = 290;
 const MAX_PEOPLE_REASONABLE = 12;
 
 async function peopleInSpace() {
-  let status;
-
-  await fetch('https://www.howmanypeopleareinspacerightnow.com/peopleinspace.json')
-      .then(res => res.json())
-      .then(json => json.number)
-      .then(number => peopleToHSV(number))
-      .then(res => status = res)
-
-  return status;
+  let res = await fetch('https://www.howmanypeopleareinspacerightnow.com/peopleinspace.json')
+    .then(res => res.json());
+  return peopleToHSV(res.number)
 }
 
 function peopleToHSV(number) {
