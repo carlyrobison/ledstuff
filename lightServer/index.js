@@ -10,6 +10,10 @@ const app = express()
 const port = 3145
 
 app.get('/', async (req, res) => {
+  res.sendFile(__dirname + '/prettified.html');
+})
+
+app.get('/lightarray', async (req, res) => {
   const lightVals = await calculateLightValues()
   res.json(lightVals)
 })
