@@ -26,7 +26,7 @@ function tempFtoRGB(number) {
   if (number >= 60) { return [161, 217, 155] }  // light green
   if (number >= 55) { return [116, 196, 118] }  // darker green
   if (number >= 50) { return [49, 163, 84] }    // deeper green
-  if (number >= 45) { return [100, 100, 100] }
+  if (number >= 45) { return [6, 104, 44] }
   if (number >= 40) { return [18, 87, 87] }  // grayish blue
   if (number >= 35) { return [0, 153, 150] }
   if (number >= 30) { return [48, 207, 194] } 
