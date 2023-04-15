@@ -9,8 +9,10 @@ const express = require('express')
 const app = express()
 const port = 3145
 
+app.use(express.static('public'));
+
 app.get('/', async (req, res) => {
-  res.sendFile(__dirname + '/prettified.html');
+  res.sendFile(__dirname + '/public/prettified.html');
 })
 
 app.get('/lightarray', async (req, res) => {
