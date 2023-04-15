@@ -24,11 +24,10 @@ app.listen(port, () => {
 })
 
 async function calculateLightValues() {
+  let lightArray = [await space.peopleInSpace()];
+  lightArray = lightArray.concat(await forecastpoints.temps());
   return {
-    'lights': [
-    await space.peopleInSpace()
-    // await sky.sky()
-    ]
+    'lights': lightArray
   }
 }
 
